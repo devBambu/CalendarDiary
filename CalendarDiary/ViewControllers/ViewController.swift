@@ -14,7 +14,6 @@ final class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setupNaviBar()
         setupCalendarView()
         setupCalendarViewConstraints()
         
@@ -38,6 +37,7 @@ final class ViewController: UIViewController {
     // MARK: 캘린더 뷰 셋업
     
     private let calendarView = UICalendarView()
+    var selectedDate: DateComponents? = nil
     
     func setupCalendarView() {
         calendarView.calendar = .current
@@ -45,38 +45,68 @@ final class ViewController: UIViewController {
         calendarView.fontDesign = .rounded
         
         calendarView.visibleDateComponents = DateComponents(year: calendarManager.today.year!, month: calendarManager.today.month!, day: 1)
-     
+        
         calendarView.delegate = self
+        
+        let dateSelection = UICalendarSelectionSingleDate(delegate: self)
+        calendarView.selectionBehavior = dateSelection
     }
     
     func setupCalendarViewConstraints() {
         view.addSubview(calendarView)
         calendarView.translatesAutoresizingMaskIntoConstraints = false
         
+        
         NSLayoutConstraint.activate([
-            calendarView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
-            calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 10),
-            calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: 10),
-            calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: 0)
+            calendarView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
             ])
     }
     
-    func dateSelect() {
-        let dateSelection = UICalendarSelectionSingleDate(delegate: self)
-        calendarView.selectionBehavior = dateSelection
+    func reloadCalendarView(date: Date) {
+            calendarView.reloadDecorations(forDateComponents: [Calendar.current.dateComponents([.year, .month, .day], from: date)], animated: true)
+
+    }
+    
+    // MARK: Alert 컨트롤러 셋업
+    
+    func setupAlertController() {
+        let inputDiary = UIAlertController(title: "내용 추가하기", message: "오늘 하루는 어땠나요?", preferredStyle: .alert)
+        self.present(inputDiary, animated: true)
+        
+        inputDiary.addTextField { (textField) in
+            textField.placeholder = "내용을 입력해주세요. (5글자 이내)"
+        }
+        
+
     }
 
+    
 }
 
 extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
-    func dateSelection(_ selection: UICalendarSelectionSingleDate, canSelectDate dateComponents: DateComponents?) -> Bool {
-        return dateComponents != nil
+
+    // UICalendarViewDelegate
+    func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
+        print(#function)
+        
+        if let selectedDate = selectedDate, selectedDate == dateComponents {
+            setupAlertController()
+        }
+        return nil
     }
     
+    // UICalendarSelectionSingleDateDelegate
     func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
-        print("A")
+        selection.setSelected(dateComponents, animated: true)
+        selectedDate = dateComponents
+        if let date = selectedDate {
+            calendarView(calendarView, decorationFor: date)
+            reloadCalendarView(date: Calendar.current.date(from: date)!)
+        }
     }
-    
 
     
 }
