@@ -8,9 +8,9 @@
 import UIKit
 
 final class ViewController: UIViewController {
-
-    let calendarManager = CalendarManger()
-            
+    
+    let calendarManager = CalendarManger.shared
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -18,7 +18,7 @@ final class ViewController: UIViewController {
         setupCalendarViewConstraints()
         
     }
-
+    
     // MARK: 네비게이션 바 셋업
     func setupNaviBar() {
         self.title = "\(calendarManager.today.year!)"
@@ -62,17 +62,17 @@ final class ViewController: UIViewController {
             calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             calendarView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             calendarView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            ])
+        ])
     }
     
     func reloadCalendarView(date: Date) {
-            calendarView.reloadDecorations(forDateComponents: [Calendar.current.dateComponents([.year, .month, .day], from: date)], animated: true)
-
+        calendarView.reloadDecorations(forDateComponents: [Calendar.current.dateComponents([.year, .month, .day], from: date)], animated: true)
+        
     }
     
     // MARK: Alert 컨트롤러 셋업
     
-    func setupAlertController() {
+    func writeDiary() {
         let inputDiary = UIAlertController(title: "오늘 하루는 어땠나요?", message: "오늘의 기분을 5글자로 표현해주세요.", preferredStyle: .alert)
         self.present(inputDiary, animated: true)
         
@@ -86,12 +86,28 @@ final class ViewController: UIViewController {
             if let diaryText = textFields[0].text {
                 print(diaryText)
             }
-            
         }
         
         inputDiary.addAction(writeAction)
+    }
+    
+    func updateDiary() {
+        let inputDiary = UIAlertController(title: "오늘 하루는 어땠나요?", message: "오늘의 기분을 5글자로 표현해주세요.", preferredStyle: .alert)
+        self.present(inputDiary, animated: true)
         
-
+        inputDiary.addTextField { (textField) in
+            textField.placeholder = "내용을 입력해주세요."
+        }
+        
+        let updateAction = UIAlertAction(title: "수정하기", style: .default) { [weak inputDiary] _ in
+            guard let textFields = inputDiary?.textFields else { return }
+            
+            if let diaryText = textFields[0].text {
+                print(diaryText)
+            }
+        }
+        
+        inputDiary.addAction(updateAction)
     }
 
     
@@ -104,7 +120,7 @@ extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateD
         print(#function)
         
         if let selectedDate = selectedDate, selectedDate == dateComponents {
-            setupAlertController()
+            writeDiary(date: selectedDate)
         }
         return nil
     }
@@ -113,9 +129,10 @@ extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateD
     func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
         selection.setSelected(dateComponents, animated: true)
         selectedDate = dateComponents
-        if let date = selectedDate {
-            calendarView(calendarView, decorationFor: date)
-            reloadCalendarView(date: Calendar.current.date(from: date)!)
+        if let selectedDate = selectedDate {
+            let date = Calendar.current.date(from: selectedDate)!
+            calendarView(calendarView, decorationFor: selectedDate)
+            reloadCalendarView(date: date)
         }
     }
 
