@@ -73,12 +73,23 @@ final class ViewController: UIViewController {
     // MARK: Alert 컨트롤러 셋업
     
     func setupAlertController() {
-        let inputDiary = UIAlertController(title: "내용 추가하기", message: "오늘 하루는 어땠나요?", preferredStyle: .alert)
+        let inputDiary = UIAlertController(title: "오늘 하루는 어땠나요?", message: "오늘의 기분을 5글자로 표현해주세요.", preferredStyle: .alert)
         self.present(inputDiary, animated: true)
         
         inputDiary.addTextField { (textField) in
-            textField.placeholder = "내용을 입력해주세요. (5글자 이내)"
+            textField.placeholder = "내용을 입력해주세요."
         }
+        
+        let writeAction = UIAlertAction(title: "작성하기", style: .default) { [weak inputDiary] _ in
+            guard let textFields = inputDiary?.textFields else { return }
+            
+            if let diaryText = textFields[0].text {
+                print(diaryText)
+            }
+            
+        }
+        
+        inputDiary.addAction(writeAction)
         
 
     }
