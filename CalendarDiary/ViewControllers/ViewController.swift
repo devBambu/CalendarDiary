@@ -19,25 +19,16 @@ final class ViewController: UIViewController {
         
     }
     
-    // MARK: 네비게이션 바 셋업
-    func setupNaviBar() {
-        self.title = "\(calendarManager.today.year!)"
-        
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = .white
-        navigationController?.navigationBar.tintColor = .black
-        navigationController?.navigationBar.standardAppearance = appearance
-        navigationController?.navigationBar.scrollEdgeAppearance = appearance
-        navigationController?.navigationBar.compactAppearance = appearance
-        navigationController?.navigationBar.prefersLargeTitles = false
-        
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        reloadCalendarView(date: calendarManager.calendar.date(from: calendarManager.today)!)
     }
-    
+       
     // MARK: 캘린더 뷰 셋업
     
     private let calendarView = UICalendarView()
     var selectedDate: DateComponents? = nil
+
     
     func setupCalendarView() {
         calendarView.calendar = .current
@@ -56,7 +47,6 @@ final class ViewController: UIViewController {
         view.addSubview(calendarView)
         calendarView.translatesAutoresizingMaskIntoConstraints = false
         
-        
         NSLayoutConstraint.activate([
             calendarView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             calendarView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
@@ -67,60 +57,81 @@ final class ViewController: UIViewController {
     
     func reloadCalendarView(date: Date) {
         calendarView.reloadDecorations(forDateComponents: [Calendar.current.dateComponents([.year, .month, .day], from: date)], animated: true)
-        
     }
     
     // MARK: Alert 컨트롤러 셋업
     
-    func writeDiary() {
-        let inputDiary = UIAlertController(title: "오늘 하루는 어땠나요?", message: "오늘의 기분을 5글자로 표현해주세요.", preferredStyle: .alert)
-        self.present(inputDiary, animated: true)
+    func setupAlertController(selectedDate: DateComponents) {
+        let diaryAlert = UIAlertController(title: "오늘 하루는 어떘나요?", message: "오늘의 기분을 표현해주세요.", preferredStyle: .alert)
+        self.present(diaryAlert, animated: true)
         
-        inputDiary.addTextField { (textField) in
-            textField.placeholder = "내용을 입력해주세요."
-        }
+        let diary = calendarManager.getDiary(selectedDate: selectedDate)
         
-        let writeAction = UIAlertAction(title: "작성하기", style: .default) { [weak inputDiary] _ in
-            guard let textFields = inputDiary?.textFields else { return }
+        if let diary = diary {
+            updateDiary(diaryAlert: diaryAlert, diary: diary)
             
-            if let diaryText = textFields[0].text {
-                print(diaryText)
-            }
+        } else {
+            writeDiary(diaryAlert: diaryAlert, selectedDate: selectedDate)
         }
         
-        inputDiary.addAction(writeAction)
+        
     }
     
-    func updateDiary() {
-        let inputDiary = UIAlertController(title: "오늘 하루는 어땠나요?", message: "오늘의 기분을 5글자로 표현해주세요.", preferredStyle: .alert)
-        self.present(inputDiary, animated: true)
+    func writeDiary(diaryAlert: UIAlertController, selectedDate: DateComponents?) {
+
+        var diaryText = ""
         
-        inputDiary.addTextField { (textField) in
+        diaryAlert.addTextField { (textField) in
             textField.placeholder = "내용을 입력해주세요."
+            textField.setPlaceholder(color: .lightGray)
         }
         
-        let updateAction = UIAlertAction(title: "수정하기", style: .default) { [weak inputDiary] _ in
-            guard let textFields = inputDiary?.textFields else { return }
+        let writeAction = UIAlertAction(title: "작성하기", style: .default) { [weak diaryAlert] _ in
+            guard let textFields = diaryAlert?.textFields else { return }
+            if let text = textFields[0].text { diaryText = text }
+        }
+        
+        diaryAlert.addAction(writeAction)
+        calendarManager.saveDiary(selectedDate: selectedDate!, diarytext: diaryText) { return }
+    }
+
+    
+    func updateDiary(diaryAlert: UIAlertController, diary: Diary) {
+        
+        var newText = ""
+        
+        diaryAlert.addTextField() { (textField) in
+            textField.placeholder = diary.diarytext
+            textField.textColor = .black
+        }
+        
+        let updateAction = UIAlertAction(title: "수정하기", style: .default) { [weak diaryAlert] _ in
+            guard let textFields = diaryAlert?.textFields else { return }
             
-            if let diaryText = textFields[0].text {
-                print(diaryText)
-            }
+            if let text = textFields[0].text { newText = text }
         }
         
-        inputDiary.addAction(updateAction)
+        diaryAlert.addAction(updateAction)
+        calendarManager.updateDiary(diary: diary, newDiaryText: newText, completion: { return })
     }
 
     
 }
 
 extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateDelegate {
-
+    
     // UICalendarViewDelegate
     func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
-        print(#function)
-        
         if let selectedDate = selectedDate, selectedDate == dateComponents {
-            writeDiary(date: selectedDate)
+            if let diary = self.calendarManager.getDiary(selectedDate: dateComponents) {
+                // 해당 날짜의 다이어리 텍스트를 커스텀뷰로 출력
+                return .customView {
+                    let label = UILabel()
+                    label.text = diary.diarytext
+                    label.textAlignment = .center
+                    return label
+                }
+            }
         }
         return nil
     }
@@ -131,10 +142,10 @@ extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateD
         selectedDate = dateComponents
         if let selectedDate = selectedDate {
             let date = Calendar.current.date(from: selectedDate)!
-            calendarView(calendarView, decorationFor: selectedDate)
+            // 선택이 되면 입력받아 저장하는 메소드 실행
+            setupAlertController(selectedDate: selectedDate)
             reloadCalendarView(date: date)
         }
     }
-
     
 }

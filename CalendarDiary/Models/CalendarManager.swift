@@ -11,7 +11,7 @@ import CoreData
 final class CalendarManger {
     
     let calendar = Calendar.current
-    let today = DateComponents()
+    lazy var today = calendar.dateComponents([.year, .month, .day], from: Date())
     
     // MARK: CoreData Setup
     static let shared = CalendarManger()
@@ -49,7 +49,7 @@ final class CalendarManger {
         if let context = context {
             let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
             request.predicate = NSPredicate(format: "date == %@", date as CVarArg)
-                        
+            
             do {
                 if let targetdiary = try context.fetch(request).first as? Diary {
                     diary = targetdiary
@@ -74,7 +74,7 @@ final class CalendarManger {
                 }
             }
         }
-        completion()
+        return completion()
     }
     
     // [Delete]
@@ -85,44 +85,23 @@ final class CalendarManger {
         }
         
         if let context = context {
-            let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
-            request.predicate = NSPredicate(format: "date == %@", date as CVarArg)
-            
-            do {
-                if let targetDiary = try context.fetch(request).first as? Diary {
-                    context.delete(targetDiary)
-                    appDelegate?.saveContext()
-                }
-                completion()
-            } catch {
-                print("삭제 실패")
-                completion()
-            }
+            context.delete(diary)
+            appDelegate?.saveContext()
         }
+        completion()
     }
     
     // [Update]
-    func updateDiary(newDiary: Diary, completion: @escaping () -> Void) {
-        guard let selectedDate = newDiary.date else {
+    func updateDiary(diary: Diary, newDiaryText: String, completion: @escaping () -> Void) {
+        guard let selectedDate = diary.date else {
             completion()
             return
         }
         
         if let context = context {
-            let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
-            request.predicate = NSPredicate(format: "date == %@", selectedDate as CVarArg)
-            
-            do {
-                if var targetDiary = try context.fetch(request).first as? Diary {
-                    targetDiary = newDiary
-                    appDelegate?.saveContext()
-                }
-                completion()
-            } catch {
-                print("업데이트 실패")
-                completion()
-            }
+            diary.diarytext = newDiaryText
+            appDelegate?.saveContext()
         }
+        completion()
     }
-
 }
