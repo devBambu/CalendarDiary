@@ -78,30 +78,56 @@ final class CalendarManger {
     }
     
     // [Delete]
-    func deleteDiary(diary: Diary, completion: @escaping () -> Void) {
-        guard let date = diary.date else {
+    func deleteDiary(date: Date?, completion: @escaping () -> Void) {
+        guard let date = date else {
             completion()
             return
         }
         
         if let context = context {
-            context.delete(diary)
-            appDelegate?.saveContext()
+            let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
+            request.predicate = NSPredicate(format: "date == %@", date as CVarArg)
+            
+            do {
+                if let fetchedDiary = try context.fetch(request) as? [Diary] {
+                    if var targetDiary = fetchedDiary.first { context.delete(targetDiary)
+                        appDelegate?.saveContext()
+                    }
+                }
+                completion()
+            } catch {
+                print("삭제 실패")
+                completion()
+            }
         }
-        completion()
     }
     
     // [Update]
-    func updateDiary(diary: Diary, newDiaryText: String, completion: @escaping () -> Void) {
-        guard let selectedDate = diary.date else {
+    func updateDiary(date: Date?, newDiaryText: String, completion: @escaping () -> Void) {
+        guard let date = date else {
             completion()
             return
         }
         
         if let context = context {
-            diary.diarytext = newDiaryText
-            appDelegate?.saveContext()
+            let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
+            request.predicate = NSPredicate(format: "date == %@", date as CVarArg)
+            
+            do {
+                if let FetchedDiary = try context.fetch(request) as? [Diary] {
+                    if var targetDiary = FetchedDiary.first {
+                        targetDiary.date = date
+                        targetDiary.diarytext = newDiaryText
+                        appDelegate?.saveContext()
+                    }
+                }
+                completion()
+            } catch {
+                print("업데이트 실패")
+                completion()
+            }
+            
         }
-        completion()
+        
     }
 }

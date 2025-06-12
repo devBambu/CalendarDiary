@@ -28,7 +28,7 @@ final class ViewController: UIViewController {
     
     private let calendarView = UICalendarView()
     var selectedDate: DateComponents? = nil
-
+    var decorations: [DateComponents: UICalendarView.Decoration] = [:]
     
     func setupCalendarView() {
         calendarView.calendar = .current
@@ -57,6 +57,7 @@ final class ViewController: UIViewController {
     
     func reloadCalendarView(date: Date) {
         calendarView.reloadDecorations(forDateComponents: [Calendar.current.dateComponents([.year, .month, .day], from: date)], animated: true)
+
     }
     
     // MARK: Alert 컨트롤러 셋업
@@ -89,10 +90,12 @@ final class ViewController: UIViewController {
         let writeAction = UIAlertAction(title: "작성하기", style: .default) { [weak diaryAlert] _ in
             guard let textFields = diaryAlert?.textFields else { return }
             if let text = textFields[0].text { diaryText = text }
+            self.calendarManager.saveDiary(selectedDate: selectedDate!, diarytext: diaryText) { return }
         }
-        
         diaryAlert.addAction(writeAction)
-        calendarManager.saveDiary(selectedDate: selectedDate!, diarytext: diaryText) { return }
+        let decoration = addDecoration(text: diaryText, on: selectedDate!)
+        addDecorations(decoration: decoration, on: selectedDate!)
+        
     }
 
     
@@ -109,12 +112,13 @@ final class ViewController: UIViewController {
             guard let textFields = diaryAlert?.textFields else { return }
             
             if let text = textFields[0].text { newText = text }
+            
+            self.calendarManager.updateDiary(diary: diary, newDiaryText: newText, completion: { return })
         }
         
         diaryAlert.addAction(updateAction)
-        calendarManager.updateDiary(diary: diary, newDiaryText: newText, completion: { return })
-    }
 
+    }
     
 }
 
@@ -123,15 +127,10 @@ extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateD
     // UICalendarViewDelegate
     func calendarView(_ calendarView: UICalendarView, decorationFor dateComponents: DateComponents) -> UICalendarView.Decoration? {
         if let selectedDate = selectedDate, selectedDate == dateComponents {
-            if let diary = self.calendarManager.getDiary(selectedDate: dateComponents) {
-                // 해당 날짜의 다이어리 텍스트를 커스텀뷰로 출력
-                return .customView {
-                    let label = UILabel()
-                    label.text = diary.diarytext
-                    label.textAlignment = .center
-                    return label
-                }
-            }
+            
+            // 해당 날짜의 다이어리 텍스트를 커스텀뷰로 출력
+            return decorations[selectedDate]
+            
         }
         return nil
     }
@@ -146,6 +145,21 @@ extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateD
             setupAlertController(selectedDate: selectedDate)
             reloadCalendarView(date: date)
         }
+    }
+    
+    // Decoration 추가하기
+    
+    func addDecoration(text: String, on date: DateComponents) -> UICalendarView.Decoration {
+        return .customView {
+            let label = UILabel()
+            label.text = text
+            label.textAlignment = .center
+            return label
+        }
+    }
+    
+    func addDecorations(decoration: UICalendarView.Decoration, on date: DateComponents) {
+        decorations[date] = decoration
     }
     
 }
