@@ -12,6 +12,8 @@ final class CalendarManger {
     
     let calendar = Calendar.current
     lazy var today = calendar.dateComponents([.year, .month, .day], from: Date())
+    var selectedDate: DateComponents? = nil
+    var decorations: [DateComponents: UICalendarView.Decoration] = [:]
     
     // MARK: CoreData Setup
     static let shared = CalendarManger()
@@ -62,12 +64,17 @@ final class CalendarManger {
     }
     
     // [Create]
-    func saveDiary(selectedDate: DateComponents, diarytext: String, completion: @escaping () -> Void) {
+    func saveDiary(selectedDate: DateComponents?, diarytext: String, completion: @escaping () -> Void) {
+        guard let date = selectedDate else {
+            completion()
+            return
+        }
+        
         if let context = context {
             if let entity = NSEntityDescription.entity(forEntityName: self.modelName, in: context) {
                 if let diary = NSManagedObject(entity: entity, insertInto: context) as? Diary {
                     // Diary에 실제 데이터 할당
-                    diary.date = calendar.date(from: selectedDate)
+                    diary.date = calendar.date(from: date)
                     diary.diarytext = diarytext
                     
                     appDelegate?.saveContext()
@@ -78,19 +85,20 @@ final class CalendarManger {
     }
     
     // [Delete]
-    func deleteDiary(date: Date?, completion: @escaping () -> Void) {
-        guard let date = date else {
+    func deleteDiary(date: DateComponents?, completion: @escaping () -> Void) {
+        guard let dateComp = date else {
             completion()
             return
         }
         
+        let date = calendar.date(from: dateComp)!
         if let context = context {
             let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
             request.predicate = NSPredicate(format: "date == %@", date as CVarArg)
             
             do {
                 if let fetchedDiary = try context.fetch(request) as? [Diary] {
-                    if var targetDiary = fetchedDiary.first { context.delete(targetDiary)
+                    if let targetDiary = fetchedDiary.first { context.delete(targetDiary)
                         appDelegate?.saveContext()
                     }
                 }
@@ -103,19 +111,20 @@ final class CalendarManger {
     }
     
     // [Update]
-    func updateDiary(date: Date?, newDiaryText: String, completion: @escaping () -> Void) {
-        guard let date = date else {
+    func updateDiary(date: DateComponents?, newDiaryText: String, completion: @escaping () -> Void) {
+        guard let dateComp = date else {
             completion()
             return
         }
         
+        let date = calendar.date(from: dateComp)!
         if let context = context {
             let request = NSFetchRequest<NSManagedObject>(entityName: self.modelName)
             request.predicate = NSPredicate(format: "date == %@", date as CVarArg)
             
             do {
                 if let FetchedDiary = try context.fetch(request) as? [Diary] {
-                    if var targetDiary = FetchedDiary.first {
+                    if let targetDiary = FetchedDiary.first {
                         targetDiary.date = date
                         targetDiary.diarytext = newDiaryText
                         appDelegate?.saveContext()
@@ -130,4 +139,20 @@ final class CalendarManger {
         }
         
     }
+    
+    // Decoration 추가하기
+    
+    func addDecoration(text: String, on date: DateComponents) -> UICalendarView.Decoration {
+        return .customView {
+            let label = UILabel()
+            label.text = text
+            label.textAlignment = .center
+            return label
+        }
+    }
+    
+    func addDecorations(decoration: UICalendarView.Decoration, on date: DateComponents) {
+        decorations[date] = decoration
+    }
+    
 }
