@@ -42,7 +42,8 @@ final class PopupView: UIView {
     let diaryTextField: UITextField = {
         var textField = UITextField()
         textField.backgroundColor = .white
-        textField.font = UIFont.systemFont(ofSize: 14)
+        textField.layer.borderWidth = 0.3
+        textField.font = UIFont.systemFont(ofSize: 16)
         textField.placeholder = "오늘의 기분을 표현해주세요."
         textField.textAlignment = .center
         textField.translatesAutoresizingMaskIntoConstraints = false
@@ -77,7 +78,7 @@ final class PopupView: UIView {
 
     let deleteButton: UIButton = {
         var button = UIButton(type: .system)
-        let buttonConfig = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold, scale: .large)
+        let buttonConfig = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold, scale: .large)
         let largeBoldTrash = UIImage(systemName: "trash.fill", withConfiguration: buttonConfig)
 
         button.setImage(largeBoldTrash, for: .normal)
@@ -118,10 +119,16 @@ final class PopupView: UIView {
             mainLabel.topAnchor.constraint(equalTo: inputDiaryView.topAnchor, constant: 80),
             mainLabel.centerXAnchor.constraint(equalTo: inputDiaryView.centerXAnchor)
         ])
+        
+        inputDiaryView.addSubview(deleteButton)
+        NSLayoutConstraint.activate([
+            deleteButton.topAnchor.constraint(equalTo: inputDiaryView.topAnchor, constant: 20),
+            deleteButton.trailingAnchor.constraint(equalTo: inputDiaryView.trailingAnchor, constant: -20)
+        ])
 
         inputDiaryView.addSubview(diaryTextField)
         NSLayoutConstraint.activate([
-            diaryTextField.heightAnchor.constraint(equalToConstant: 20),
+            diaryTextField.heightAnchor.constraint(equalToConstant: 30),
             diaryTextField.widthAnchor.constraint(equalTo: inputDiaryView.widthAnchor, multiplier: 0.8),
             diaryTextField.topAnchor.constraint(equalTo: mainLabel.bottomAnchor, constant: 10),
             diaryTextField.centerXAnchor.constraint(equalTo: inputDiaryView.centerXAnchor)
