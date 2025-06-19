@@ -92,23 +92,8 @@ extension ViewController: UICalendarViewDelegate, UICalendarSelectionSingleDateD
             // 선택이 되면 입력받아 저장하는 메소드 실행
             calendarManager.selectedDate = selectedDate
             popUp()
-
+            
         }
-    }
-    
-    // Decoration 추가하기
-    
-    func addDecoration(text: String, on date: DateComponents) -> UICalendarView.Decoration {
-        return .customView {
-            let label = UILabel()
-            label.text = text
-            label.textAlignment = .center
-            return label
-        }
-    }
-    
-    func addDecorations(decoration: UICalendarView.Decoration, on date: DateComponents) {
-        decorations[date] = decoration
     }
     
 }
